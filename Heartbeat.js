@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect } from "react";
 
-const HEARTBEAT_INTERVAL = 8000; // Interval in milliseconds
+const HEARTBEAT_INTERVAL = 5000; // Interval in milliseconds
 
 const sendHeartbeat = async (username) => {
   try {

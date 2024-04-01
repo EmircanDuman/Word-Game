@@ -1,13 +1,14 @@
-//!! HEARTBEAT.JS'i burada return() içine component olarak ekle ve user'ı 8 saniyede bir kontrol eden bir interval'ın olsun
-// ANCAK BU SADECE SEÇİLİ USER'I UPDATELER, UYGULAMAYI KAPATMIŞ BİR KULLANICIYI KONTROL EDEN MEKANİZMA HENÜZ YOK
+// Redux ile global state management ayarla, sabitsec.js 'de sabit harf olup olmayana karar ver
+//ardından harf sayısı seçtir ve odaları gösteren son bir sayfa ayarla
+//layout'a redux'u ekle
 
 import axios from "axios";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import { Alert, Button, StyleSheet, Text, TextInput, View } from "react-native";
+import { Button, StyleSheet, Text, TextInput, View } from "react-native";
 import tw from "twrnc";
 
-export default function App() {
+export const App = () => {
   const PORT = process.env.PORT || 3000;
 
   const [status, setStatus] = useState("Haven't tried yet");
@@ -32,7 +33,7 @@ export default function App() {
         },
       });
       if (res.data.success) {
-        setStatus("Found user");
+        setStatus("Logging in...");
       } else {
         setStatus("User not found");
       }
@@ -96,7 +97,7 @@ export default function App() {
       case "Please fill the input areas":
       case "Both name and password should be at least 5 characters long":
         return statusStyles.red;
-      case "Found user":
+      case "Logging in...":
         return statusStyles.green;
       case "User not found":
         return statusStyles.red;
@@ -166,4 +167,4 @@ export default function App() {
       <StatusBar style="dark" />
     </View>
   );
-}
+};
