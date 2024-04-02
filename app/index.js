@@ -5,6 +5,7 @@ import tw from "twrnc";
 import { setName as setReduxName } from "./redux/userslice";
 import { useDispatch } from "react-redux";
 import { router } from "expo-router";
+import { startHeartbeat } from "../server/Heartbeat";
 
 const App = () => {
   const PORT = process.env.PORT || 3000;
@@ -34,6 +35,7 @@ const App = () => {
       if (res.data.success) {
         setStatus("Logging in...");
         dispatch(setReduxName(res.data.user.name));
+        startHeartbeat(res.data.user.name);
 
         setTimeout(() => {
           router.push("/oyunmodusec");
