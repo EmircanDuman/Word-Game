@@ -35,6 +35,8 @@ app.get("/user", async (req, res) => {
   try {
     const user = await User.findOne({ name, password }).exec();
     if (user) {
+      // Update the user's status to "Online" in MongoDB
+      await User.updateOne({ name }, { status: "Online" });
       res.json({ success: true, message: "User found", user });
     } else {
       res.json({ success: false, message: "User not found" });

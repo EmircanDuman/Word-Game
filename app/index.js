@@ -1,19 +1,18 @@
-// Redux ile global state management ayarla, sabitsec.js 'de sabit harf olup olmayana karar ver
-//ardından harf sayısı seçtir ve odaları gösteren son bir sayfa ayarla
-//layout'a redux'u ekle
-
 import axios from "axios";
-import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { Button, StyleSheet, Text, TextInput, View } from "react-native";
 import tw from "twrnc";
+import { setName as setReduxName } from "./redux/userslice";
+import { useDispatch } from "react-redux";
+import { router } from "expo-router";
 
-export const App = () => {
+const App = () => {
   const PORT = process.env.PORT || 3000;
 
   const [status, setStatus] = useState("Haven't tried yet");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const dispatch = useDispatch();
 
   const userLogin = async () => {
     if (name === "" || password === "") {
@@ -34,6 +33,11 @@ export const App = () => {
       });
       if (res.data.success) {
         setStatus("Logging in...");
+        dispatch(setReduxName(res.data.user.name));
+
+        setTimeout(() => {
+          router.push("/oyunmodusec");
+        }, 1000);
       } else {
         setStatus("User not found");
       }
@@ -164,7 +168,8 @@ export const App = () => {
       <Text style={getStatusColor(status)}>{status}</Text>
       <Button title="Login" onPress={() => userLogin()} />
       <Button title="Register" onPress={() => userRegister()} />
-      <StatusBar style="dark" />
     </View>
   );
 };
+
+export default App;
