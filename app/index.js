@@ -6,6 +6,7 @@ import { setName as setReduxName } from "./redux/userslice";
 import { useDispatch } from "react-redux";
 import { router } from "expo-router";
 import { startHeartbeat } from "../server/Heartbeat";
+import { setIntervalId } from "./redux/intervalslice";
 
 const App = () => {
   const PORT = process.env.PORT || 3000;
@@ -35,7 +36,9 @@ const App = () => {
       if (res.data.success) {
         setStatus("Logging in...");
         dispatch(setReduxName(res.data.user.name));
-        startHeartbeat(res.data.user.name);
+
+        let intervalId = startHeartbeat(res.data.user.name);
+        dispatch(setIntervalId(intervalId));
 
         setTimeout(() => {
           router.push("/oyunmodusec");
@@ -126,7 +129,7 @@ const App = () => {
       color: "green",
     },
     red: {
-      color: "red", // Corrected typo here
+      color: "red",
     },
     blue: {
       color: "blue",
@@ -152,7 +155,7 @@ const App = () => {
         }}
         defaultValue=""
         placeholder="Enter name"
-        onChangeText={(text) => setName(text)} // Use text instead of e
+        onChangeText={(text) => setName(text)}
       />
       <TextInput
         style={{
@@ -164,7 +167,7 @@ const App = () => {
         }}
         defaultValue=""
         placeholder="Enter password"
-        onChangeText={(text) => setPassword(text)} // Use text instead of e
+        onChangeText={(text) => setPassword(text)}
       />
 
       <Text style={getStatusColor(status)}>{status}</Text>
