@@ -14,11 +14,11 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 const gameSchema = new mongoose.Schema({
-  user1: { type: String },
+  user1: { type: String, default: null },
   user2: { type: String, default: null },
   user1timestamp: { type: Date, default: null },
   user2timestamp: { type: Date, default: null },
-  roomtype: { type: String },
+  roomtype: { type: String, default: null },
   user1word: { type: String, default: null },
   user2word: { type: String, default: null },
   user1try: { type: [String], default: null },
@@ -41,68 +41,62 @@ app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 3000;
 
-app.post("/createroom", async (req, res) => {
-  const { user1, roomtype } = req.body;
-
+app.get("/joinroom", async (req, res) => {
   try {
-    const newRoom = new Game({
-      user1: user1,
+    const { username, roomtype } = req.query;
+
+    // Find a game room with matching roomtype and at least one user field null
+    let game = await Game.findOne({
       roomtype: roomtype,
+      $or: [{ user1: null }, { user2: null }],
     });
 
-    await newRoom.save();
+    if (!game) {
+      // If no available room is found, return a message indicating that the room is full
+      return res.status(405).json({
+        success: false,
+        message: "Room is full. Please try again later.",
+      });
+    }
 
-    res.status(201).json({
-      success: true,
-      message: "Room created successfully",
-      room: newRoom,
-    });
+    // Update the found room with the new user and timestamp
+    if (!game.user1) {
+      game.user1 = username;
+      game.user1timestamp = new Date();
+    } else {
+      game.user2 = username;
+      game.user2timestamp = new Date();
+    }
+    await game.save();
+
+    res
+      .status(200)
+      .json({ success: true, message: "Joined room successfully" });
   } catch (error) {
-    // Handle any errors
-    console.error("Error creating room:", error);
+    console.error(error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
-app.patch("/joinroom", async (req, res) => {
+app.get("/getroom", async (req, res) => {
   try {
-    // Destructure the userInRoom and joiningUser values from the request body
-    const { userInRoom, joiningUser } = req.body;
-
-    // Find the room that has userInRoom as either user1 or user2
-    const room = await Game.findOne({
-      $or: [{ user1: userInRoom }, { user2: userInRoom }],
+    const { username, roomtype } = req.query;
+    const game = await Game.findOne({
+      roomtype: roomtype,
+      $or: [{ user1: username }, { user2: username }],
     });
 
-    // Check if the room exists
-    if (!room) {
+    if (!game) {
       return res
         .status(404)
         .json({ success: false, message: "Room not found" });
     }
 
-    // Check if user1 or user2 in the room is null and update it with joiningUser
-    if (!room.user1) {
-      room.user1 = joiningUser;
-    } else if (!room.user2) {
-      room.user2 = joiningUser;
-    } else {
-      return res
-        .status(400)
-        .json({ success: false, message: "Room is already full" });
-    }
-
-    // Save the updated room to the database
-    await room.save();
-
-    return res
-      .status(200)
-      .json({ success: true, message: "User joined room successfully" });
+    // Return the room object in the response
+    res.status(200).json({ success: true, room: game });
   } catch (error) {
-    console.error("Error joining room:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
+    console.error("Error occurred while getting room:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
@@ -197,3 +191,545 @@ setInterval(checkAndUpdateStatus, 16000);
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+const createRooms = async () => {
+  try {
+    const roomTypes = ["4letter", "5letter", "6letter", "7letter"];
+
+    // Delete all existing rooms
+    await Game.deleteMany({});
+
+    console.log("Existing rooms deleted successfully.");
+
+    for (const roomType of roomTypes) {
+      // Create a new game room document
+      const newRoom = new Game({
+        roomtype: roomType,
+      });
+
+      // Save the new room document to the database
+      await newRoom.save();
+    }
+
+    console.log("Rooms creation process completed.");
+  } catch (error) {
+    console.error("Error occurred while creating rooms:", error);
+  }
+};
+
+createRooms();
+
+const turkishWords = [
+  "akıl",
+  "asma",
+  "atış",
+  "avlu",
+  "ayna",
+  "balık",
+  "bana",
+  "baskı",
+  "bata",
+  "bayi",
+  "bira",
+  "boya",
+  "buğu",
+  "çamaşır",
+  "çatlak",
+  "cephe",
+  "dahi",
+  "darı",
+  "davul",
+  "denge",
+  "desen",
+  "dikiş",
+  "dinç",
+  "dolu",
+  "duvar",
+  "düşü",
+  "eğik",
+  "ekip",
+  "eksi",
+  "elma",
+  "emir",
+  "engel",
+  "eşik",
+  "evli",
+  "fakir",
+  "fal",
+  "fare",
+  "fena",
+  "firma",
+  "fotoğraf",
+  "güç",
+  "halk",
+  "harf",
+  "hava",
+  "havlu",
+  "heyecan",
+  "hobi",
+  "içki",
+  "ışık",
+  "işte",
+  "ıslak",
+  "ilaç",
+  "izin",
+  "jandarma",
+  "jeton",
+  "jüri",
+  "kaka",
+  "kanal",
+  "kapat",
+  "kardeş",
+  "kasap",
+  "kavga",
+  "kedi",
+  "kelepçe",
+  "kemer",
+  "kepçe",
+  "keramet",
+  "kilim",
+  "kilit",
+  "kırık",
+  "kitap",
+  "kolay",
+  "köpek",
+  "köprü",
+  "kral",
+  "kumaş",
+  "kumanda",
+  "kurt",
+  "kutu",
+  "kuşak",
+  "kürek",
+  "kütük",
+  "laf",
+  "lamba",
+  "limon",
+  "madde",
+  "mafya",
+  "makas",
+  "marul",
+  "maya",
+  "mezar",
+  "minik",
+  "mısır",
+  "mizah",
+  "müzik",
+  "nakit",
+  "nişan",
+  "oda",
+  "orman",
+  "oyun",
+  "okul",
+  "olta",
+  "onay",
+  "oscar",
+  "otel",
+  "oyuncu",
+  "ödül",
+  "ördek",
+  "özel",
+  "özür",
+  "para",
+  "park",
+  "pasta",
+  "paten",
+  "pilot",
+  "piyano",
+  "polis",
+  "posta",
+  "porsiyon",
+  "profesör",
+  "pul",
+  "radyo",
+  "ramazan",
+  "randevu",
+  "resim",
+  "rüya",
+  "sade",
+  "sahte",
+  "salon",
+  "sancak",
+  "şahit",
+  "şans",
+  "şeker",
+  "şehir",
+  "şerit",
+  "şifre",
+  "şoför",
+  "şöhret",
+  "şok",
+  "şube",
+  "şüphe",
+  "süt",
+  "sıfır",
+  "sıra",
+  "sıra dışı",
+  "sıra gecesi",
+  "sırt",
+  "sırt çantası",
+  "sırt üstü",
+  "taban",
+  "tarih",
+  "taksi",
+  "talih",
+  "tamir",
+  "tara",
+  "tatil",
+  "tava",
+  "taze",
+  "tek",
+  "telefon",
+  "televizyon",
+  "teneke",
+  "teori",
+  "terapi",
+  "teslim",
+  "teşvik",
+  "tiyatro",
+  "toka",
+  "toprak",
+  "toz",
+  "trafik",
+  "traktör",
+  "tuz",
+  "tur",
+  "turna",
+  "tutku",
+  "tünel",
+  "tüp",
+  "ürün",
+  "üstat",
+  "üye",
+  "üzüm",
+  "vade",
+  "vali",
+  "varlık",
+  "vatandaş",
+  "vejetaryen",
+  "vize",
+  "volkan",
+  "yaban",
+  "yalan",
+  "yarış",
+  "yatak",
+  "yatırım",
+  "yavru",
+  "yer",
+  "yıldırım",
+  "yüz",
+  "zaman",
+  "zincir",
+  "abla",
+  "açık",
+  "açlık",
+  "adam",
+  "adet",
+  "ağıt",
+  "akçe",
+  "akıl",
+  "aktör",
+  "alay",
+  "alış",
+  "altın",
+  "altlık",
+  "amca",
+  "anne",
+  "ara",
+  "araba",
+  "araç",
+  "arma",
+  "arsa",
+  "artı",
+  "aşçı",
+  "aşk",
+  "aşkın",
+  "av",
+  "ay",
+  "ayak",
+  "ayna",
+  "az",
+  "azık",
+  "azim",
+  "bağ",
+  "bakla",
+  "bakkal",
+  "bal",
+  "balık",
+  "balon",
+  "balya",
+  "banyo",
+  "bar",
+  "barış",
+  "basamak",
+  "baskı",
+  "baslık",
+  "baston",
+  "batık",
+  "batıkent",
+  "bay",
+  "bayram",
+  "bayrak",
+  "bey",
+  "beyin",
+  "beyit",
+  "beylik",
+  "bıçak",
+  "bilet",
+  "bina",
+  "binici",
+  "binlik",
+  "bir",
+  "bira",
+  "bisiklet",
+  "bitki",
+  "biz",
+  "boğa",
+  "boğaz",
+  "bol",
+  "bomba",
+  "boncuk",
+  "borç",
+  "boru",
+  "bot",
+  "boy",
+  "boya",
+  "bozuk",
+  "böcek",
+  "bölge",
+  "bölme",
+  "bölük",
+  "bölüm",
+  "bölünme",
+  "börek",
+  "büro",
+  "cami",
+  "camişerif",
+  "candan",
+  "canlı",
+  "canlılık",
+  "cansız",
+  "cansızlık",
+  "cem",
+  "cemaat",
+  "cep",
+  "ceza",
+  "ciğer",
+  "cins",
+  "ciyer",
+  "ciyak",
+  "cız",
+  "cızırtı",
+  "cıvıltı",
+  "çadır",
+  "çakmak",
+  "çalı",
+  "çamaşır",
+  "çan",
+  "çanta",
+  "çap",
+  "çapak",
+  "çar",
+  "çarşı",
+  "çatı",
+  "çatlak",
+  "çavuş",
+  "çavuşköy",
+  "çay",
+  "çayır",
+  "çaylak",
+  "çaylaklık",
+  "çelik",
+  "çenek",
+  "çeneği",
+  "çenik",
+  "çeniklik",
+  "çerçi",
+  "çerçiyoğlu",
+  "çerçi bey",
+  "çeyrek",
+  "çıngır",
+  "çıtak",
+  "çift",
+  "çimen",
+  "çınar",
+  "çınık",
+  "çıplak",
+  "çıtçıt",
+  "çıtırtı",
+  "çıtlık",
+  "çıtlıkçı",
+  "çıtlıkçılık",
+  "çıyan",
+  "çökelek",
+  "çöken",
+  "çöp",
+  "çömlek",
+  "çöpçü",
+  "çöpçülük",
+  "çökertme",
+  "çökme",
+  "çöküş",
+  "çözüm",
+  "dağ",
+  "dalgakıran",
+  "dalgıç",
+  "dalgın",
+  "dalkavuk",
+  "dalyan",
+  "dam",
+  "dambaş",
+  "damla",
+  "damsız",
+  "damsızlık",
+  "dar",
+  "darağacı",
+  "darbe",
+  "dare",
+  "davet",
+  "davranış",
+  "dayak",
+  "dayanak",
+  "deha",
+  "değişik",
+  "değirmen",
+  "değnek",
+  "değnekçi",
+  "değnekçilik",
+  "değnekçioğlu",
+  "değnekçioğlu",
+  "dem",
+  "demet",
+  "demir",
+  "deniz",
+  "denizaltı",
+  "denizanı",
+  "denizaltı",
+  "denizcilik",
+  "denizci",
+  "denizyıldızı",
+  "deprem",
+  "deve",
+  "devlet",
+  "devletleme",
+  "devletlemeçi",
+  "devletlemeçilik",
+  "devlet malı",
+  "devlet malıyla",
+  "devletli",
+  "devletsiz",
+  "devletçi",
+  "devletçilik",
+  "devir",
+  "devletüstü",
+  "dev",
+  "diken",
+  "dikeni",
+  "dikenli",
+  "dikenlilik",
+  "dikensiz",
+  "dikensizlik",
+  "diket",
+  "dikkat",
+  "dilek",
+  "din",
+  "dinci",
+  "dindar",
+  "dinsiz",
+  "dip",
+  "direk",
+  "diri",
+  "dirim",
+  "dizi",
+  "dizmek",
+  "dizüstü",
+  "doku",
+  "dolaşma",
+  "dolma",
+  "dolu",
+  "doluluk",
+  "domuz",
+  "dökmeci",
+  "dökmecilik",
+  "dökme",
+  "dönemeç",
+  "döner",
+  "dönme",
+  "dönüş",
+  "düş",
+  "düşü",
+  "düşüş",
+  "ebe",
+  "ecza",
+  "edebiyat",
+  "edebi",
+  "edebiyatçı",
+  "edebiyatçılık",
+  "edep",
+  "edik",
+  "eğik",
+  "eğim",
+  "eğirme",
+  "eğilim",
+  "eğirme",
+  "eğik",
+  "eğitim",
+  "eğitimci",
+  "eğitimcilik",
+  "eğreti",
+  "eğilme",
+  "eğim",
+  "eğlence",
+  "eğlence",
+  "eğlenceci",
+  "eğlenceli",
+  "eğlenme",
+  "eğme",
+  "eğreltiotu",
+  "eğri",
+  "eğreti",
+  "eğretileme",
+  "eğretileşme",
+  "eğretileşme",
+  "eğretileştirme",
+  "eğretileştirilme",
+  "eğreti",
+  "eğretileşme",
+  "eğretileştirme",
+  "eğretileştirilme",
+  "eğreti",
+  "eğretileşme",
+  "eğretileştirme",
+  "eğretileştirilme",
+  "eğreti",
+  "eğretileşme",
+  "eğretileştirme",
+];
+
+// Kelime şemasını tanımla
+const wordSchema = new mongoose.Schema({
+  kelime: String,
+});
+
+// Kelime modelini oluştur
+const Word = mongoose.model("Word", wordSchema);
+
+// Kelimeleri kaydeden fonksiyon
+async function saveWordsToMongoDB(words) {
+  try {
+    // Kelimeleri tek bir dökümana dönüştür
+    const wordsDocument = words.map((word) => ({ kelime: word }));
+
+    // Kelimeleri toplu olarak MongoDB'ye kaydet
+    await Word.insertMany(wordsDocument);
+
+    console.log("Kelimeler başarıyla MongoDB'ye kaydedildi.");
+  } catch (error) {
+    console.error(
+      "Kelimeleri MongoDB'ye kaydetme sırasında bir hata oluştu:",
+      error
+    );
+  }
+}
+
+//saveWordsToMongoDB(turkishWords);

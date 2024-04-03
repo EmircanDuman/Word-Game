@@ -28,20 +28,30 @@ export default function OyunModuSec() {
     }, 1000);
   };
 
-  const CreateRoom = async (username, roomtype) => {
-    try {
-      const response = await axios.post(
-        `http://192.168.1.37:${PORT}/createroom`,
-        {
-          user1: username,
+  const joinGame = async ({ username, roomtype }) => {
+    setDirective("Joining...");
+    setTimeout(async () => {
+      const res = await axios.get(`http://192.168.1.37:${PORT}/joinroom`, {
+        params: {
+          username: username,
           roomtype: roomtype,
-        }
-      );
-      return response.data; // Optionally return data from the server
-    } catch (error) {
-      console.error("Error creating room:", error);
-      throw error; // Throw the error for error handling in the calling code
-    }
+        },
+      });
+      switch (roomtype) {
+        case "4letter":
+          router.push("/4letter");
+          break;
+        case "5letter":
+          router.push("/5letter");
+          break;
+        case "6letter":
+          router.push("/6letter");
+          break;
+        case "7letter":
+          router.push("/7letter");
+          break;
+      }
+    }, 500);
   };
 
   return (
@@ -58,7 +68,12 @@ export default function OyunModuSec() {
           <Button
             title="4 oyuncu"
             style={tw`p-5`}
-            onPress={() => CreateRoom(name, "4letter")}
+            onPress={() =>
+              joinGame({
+                username: name,
+                roomtype: "4letter",
+              })
+            }
           />
           <Button title="5 oyuncu" style={tw`p-5`} />
         </View>
