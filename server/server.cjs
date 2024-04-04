@@ -133,6 +133,23 @@ app.get("/user/checkname", async (req, res) => {
   }
 });
 
+// Define the route handler for the /getword endpoint
+app.get("/getword", async (req, res) => {
+  try {
+    let { kelime } = req.query;
+    kelime = kelime.toLowerCase(); // Convert kelime to lowercase
+
+    // Check if a document with the given word exists in the database
+    const wordExists = await Word.exists({ kelime });
+
+    // Return true if the word exists, false otherwise
+    res.json({ exists: !!wordExists });
+  } catch (error) {
+    console.error("Error occurred while checking word existence:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 app.post("/user", async (req, res) => {
   const { name, password, status } = req.body;
 
