@@ -150,6 +150,44 @@ app.get("/getword", async (req, res) => {
   }
 });
 
+app.post("/setenemyword", async (req, res) => {
+  try {
+    const { username, roomtype, word } = req.body;
+    const game = await Game.findOne({
+      roomtype: roomtype,
+      $or: [{ user1: username }, { user2: username }],
+    });
+
+    if (!game) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Room not found" });
+    }
+
+    // Determine which user's word to update
+    let updatedGame;
+    if (game.user1 === username) {
+      updatedGame = await Game.findOneAndUpdate(
+        { _id: game._id },
+        { user2word: word },
+        { new: true }
+      );
+    } else {
+      updatedGame = await Game.findOneAndUpdate(
+        { _id: game._id },
+        { user1word: word },
+        { new: true }
+      );
+    }
+
+    // Return the updated room object in the response
+    res.status(200).json({ success: true, room: updatedGame });
+  } catch (error) {
+    console.error("Error occurred while setting enemy word:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 app.post("/user", async (req, res) => {
   const { name, password, status } = req.body;
 

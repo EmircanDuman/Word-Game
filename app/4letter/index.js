@@ -15,6 +15,8 @@ export default function Room() {
   const PORT = process.env.PORT || 3000;
   const name = useSelector((state) => state.mevcutuser.name);
   const [otherUser, setOtherUser] = useState("");
+  const [opponentWord, setOpponentWord] = useState("");
+  const [opponentWordExists, setOpponentWordExists] = useState(false);
 
   const CELL_COUNT = 4;
 
@@ -68,8 +70,23 @@ export default function Room() {
         kelime: fieldValues[0],
       },
     });
-    if (res.data.exists) console.log("success");
-    else console.log("failure");
+    if (res.data.exists) {
+      setOpponentWordExists(true);
+      setOpponentWord(fieldValues[0]);
+      console.log(name);
+      console.log(fieldValues[0]);
+      const updateRes = await axios({
+        method: "post",
+        url: `http://192.168.1.37:${PORT}/setenemyword`,
+        data: {
+          username: name,
+          roomtype: "4letter",
+          word: fieldValues[0],
+        },
+      });
+    } else {
+      console.log("failure");
+    }
   };
 
   const SubmitTry = (index) => {
@@ -89,20 +106,22 @@ export default function Room() {
           Pick a Turkish word for your opponent:
         </Text>
       </View>
-      {fieldValues.map((value, index) => (
-        <View key={index} style={index === 0 ? styles.firstCodeField : null}>
+      {opponentWordExists ? (
+        <Text style={tw`text-red-400 font-bold`}>
+          The opponent word is: {opponentWord}
+        </Text>
+      ) : (
+        <View key={0} style={styles.firstCodeField}>
           <CodeField
-            ref={refs[index]}
-            {...propsArray[index]}
-            value={value}
+            ref={refs[0]}
+            {...propsArray[0]}
+            value={fieldValues[0]}
             onChangeText={(text) => {
               const newValues = [...fieldValues];
-              newValues[index] = text;
+              newValues[0] = text;
               setFieldValues(newValues);
             }}
-            onSubmitEditing={() =>
-              index === 0 ? SubmitEnemyWord() : SubmitTry(index)
-            }
+            onSubmitEditing={SubmitEnemyWord}
             cellCount={CELL_COUNT}
             rootStyle={styles.codeFieldRoot}
             keyboardType="ascii-capable"
@@ -118,7 +137,36 @@ export default function Room() {
             )}
           />
         </View>
-      ))}
+      )}
+      {opponentWordExists &&
+        fieldValues.slice(1).map((value, index) => (
+          <View key={index + 1} style={styles.firstCodeField}>
+            <CodeField
+              ref={refs[index + 1]}
+              {...propsArray[index + 1]}
+              value={value}
+              onChangeText={(text) => {
+                const newValues = [...fieldValues];
+                newValues[index + 1] = text;
+                setFieldValues(newValues);
+              }}
+              onSubmitEditing={() => SubmitTry(index + 1)}
+              cellCount={CELL_COUNT}
+              rootStyle={styles.codeFieldRoot}
+              keyboardType="ascii-capable"
+              textContentType="oneTimeCode"
+              renderCell={({ index, symbol, isFocused }) => (
+                <Text
+                  key={index}
+                  style={[styles.cell, isFocused && styles.focusCell]}
+                  onLayout={getCellOnLayoutHandlers(index)}
+                >
+                  {symbol || (isFocused ? <Cursor /> : null)}
+                </Text>
+              )}
+            />
+          </View>
+        ))}
     </View>
   );
 }
