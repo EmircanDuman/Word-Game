@@ -1,3 +1,6 @@
+//! ownWord tamamlandı, şimdi codefield renklendirme ve kitlemesi lazım.
+//! ardından doğru kelime bulup oyunu kazandırma
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Text, View } from "react-native";
@@ -17,27 +20,29 @@ export default function Room() {
   const [otherUser, setOtherUser] = useState("");
   const [opponentWord, setOpponentWord] = useState("");
   const [opponentWordExists, setOpponentWordExists] = useState(false);
+  const [ownWord, setOwnWord] = useState(null);
+  const [cellColors, setCellColors] = useState(
+    Array(4).fill("rgb(255, 255, 255)")
+  ); // Assuming there are 4 code fields
 
   const CELL_COUNT = 4;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `http://192.168.1.37:${PORT}/getroom`,
-          {
-            params: {
-              username: name,
-              roomtype: "4letter",
-            },
-          }
-        );
-        const room = response.data.room;
+        const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
+          params: {
+            username: name,
+            roomtype: "4letter",
+          },
+        });
+        const room = res.data.room;
         const user1 = room.user1;
         const user2 = room.user2;
 
         // Determine the other user
         const otherUser = user1 === name ? user2 : user1;
+
         setOtherUser(otherUser);
       } catch (error) {
         console.error("Error occurred while fetching room:", error);
@@ -46,6 +51,28 @@ export default function Room() {
 
     fetchData();
   }, [name]);
+
+  useEffect(() => {
+    let intervalID = setInterval(async () => {
+      try {
+        if (ownWord !== null) clearInterval(intervalID);
+        const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
+          params: {
+            username: name,
+            roomtype: "4letter",
+          },
+        });
+
+        if (name === res.data.room.user1) {
+          setOwnWord(res.data.room.user1word);
+        } else {
+          setOwnWord(res.data.room.user2word);
+        }
+      } catch (error) {
+        console.error("Error occurred while fetching room:", error);
+      }
+    }, 1000);
+  }, []);
 
   const initialFieldValues = Array(5).fill("");
   const [fieldValues, setFieldValues] = useState(initialFieldValues);
@@ -62,9 +89,6 @@ export default function Room() {
   });
 
   const SubmitEnemyWord = async () => {
-    // Handle submission for the first CodeField (Enemy Word)
-    // Example:
-    console.log(`Enemy Word Submitted ${fieldValues[0]}`);
     const res = await axios.get(`http://192.168.1.37:${PORT}/getword`, {
       params: {
         kelime: fieldValues[0],
@@ -73,8 +97,6 @@ export default function Room() {
     if (res.data.exists) {
       setOpponentWordExists(true);
       setOpponentWord(fieldValues[0]);
-      console.log(name);
-      console.log(fieldValues[0]);
       const updateRes = await axios({
         method: "post",
         url: `http://192.168.1.37:${PORT}/setenemyword`,
@@ -89,10 +111,27 @@ export default function Room() {
     }
   };
 
-  const SubmitTry = (index) => {
-    // Handle submission for the subsequent CodeFields (Player's tries)
-    // Example:
-    console.log(`Try ${index + 1} Submitted: ${fieldValues[index]}`);
+  const SubmitTry = (index, submittedValue) => {
+    for (let i = 0; i < CELL_COUNT; i++) {
+      const cellValue = ownWord[i];
+      const submittedChar = submittedValue[i];
+
+      if (!ownWord.includes(submittedChar)) {
+        const newCellColors = [...cellColors];
+        newCellColors[index] = "rgb(128, 128, 128)"; // Grey color in RGB format
+        setCellColors(newCellColors);
+      } else {
+        if (cellValue === submittedChar) {
+          const newCellColors = [...cellColors];
+          newCellColors[index] = "rgb(0, 255, 0)"; // Green color in RGB format
+          setCellColors(newCellColors);
+        } else if (ownWord.includes(submittedChar)) {
+          const newCellColors = [...cellColors];
+          newCellColors[index] = "rgb(255, 255, 0)"; // Yellow color in RGB format
+          setCellColors(newCellColors);
+        }
+      }
+    }
   };
 
   return (
@@ -138,7 +177,11 @@ export default function Room() {
           />
         </View>
       )}
+      {opponentWordExists && ownWord === null && (
+        <Text>Please wait for opponent to submit a word...</Text>
+      )}
       {opponentWordExists &&
+        ownWord !== null &&
         fieldValues.slice(1).map((value, index) => (
           <View key={index + 1} style={styles.firstCodeField}>
             <CodeField
@@ -158,7 +201,11 @@ export default function Room() {
               renderCell={({ index, symbol, isFocused }) => (
                 <Text
                   key={index}
-                  style={[styles.cell, isFocused && styles.focusCell]}
+                  style={[
+                    styles.cell,
+                    isFocused && styles.focusCell,
+                    { backgroundColor: cellColors[index] }, // Apply cell colors here
+                  ]}
                   onLayout={getCellOnLayoutHandlers(index)}
                 >
                   {symbol || (isFocused ? <Cursor /> : null)}

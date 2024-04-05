@@ -91,8 +91,6 @@ app.get("/getroom", async (req, res) => {
         .status(404)
         .json({ success: false, message: "Room not found" });
     }
-
-    // Return the room object in the response
     res.status(200).json({ success: true, room: game });
   } catch (error) {
     console.error("Error occurred while getting room:", error);
