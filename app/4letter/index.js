@@ -1,5 +1,4 @@
-//! ownWord tamamlandı, şimdi codefield renklendirme ve kitlemesi lazım.
-//! ardından doğru kelime bulup oyunu kazandırma
+//TODO BELKİ STYLES SHEET İLE YAPILABİLİR
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
@@ -21,13 +20,17 @@ export default function Room() {
   const [opponentWord, setOpponentWord] = useState("");
   const [opponentWordExists, setOpponentWordExists] = useState(false);
   const [ownWord, setOwnWord] = useState(null);
-  const [cellColors, setCellColors] = useState(
-    Array(4).fill("rgb(255, 255, 255)")
-  ); // Assuming there are 4 code fields
 
   const CELL_COUNT = 4;
+  const [cellColors, setCellColors] = useState([
+    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"), // White color for the first row
+    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"), // Yellow color for the second row
+    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"), // Green color for the third row
+    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"),
+  ]);
 
   useEffect(() => {
+    console.log(cellColors[0][0]);
     const fetchData = async () => {
       try {
         const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
@@ -113,21 +116,20 @@ export default function Room() {
 
   const SubmitTry = (index, submittedValue) => {
     for (let i = 0; i < CELL_COUNT; i++) {
-      const cellValue = ownWord[i];
+      const cellValue = ownWord[i]; //orijinal
       const submittedChar = submittedValue[i];
-
       if (!ownWord.includes(submittedChar)) {
-        const newCellColors = [...cellColors];
-        newCellColors[index] = "rgb(128, 128, 128)"; // Grey color in RGB format
+        const newCellColors = [...cellColors[index]];
+        newCellColors[i] = "rgb(128, 128, 128)"; // Grey color in RGB format
         setCellColors(newCellColors);
       } else {
         if (cellValue === submittedChar) {
-          const newCellColors = [...cellColors];
-          newCellColors[index] = "rgb(0, 255, 0)"; // Green color in RGB format
+          const newCellColors = [...cellColors[index]];
+          newCellColors[i] = "rgb(0, 255, 0)"; // Grey color in RGB format
           setCellColors(newCellColors);
         } else if (ownWord.includes(submittedChar)) {
-          const newCellColors = [...cellColors];
-          newCellColors[index] = "rgb(255, 255, 0)"; // Yellow color in RGB format
+          const newCellColors = [...cellColors[index]];
+          newCellColors[i] = "rgb(255, 255, 0)"; // Grey color in RGB format
           setCellColors(newCellColors);
         }
       }
@@ -182,18 +184,18 @@ export default function Room() {
       )}
       {opponentWordExists &&
         ownWord !== null &&
-        fieldValues.slice(1).map((value, index) => (
-          <View key={index + 1} style={styles.firstCodeField}>
+        fieldValues.slice(1).map((value, i) => (
+          <View key={i + 1} style={styles.firstCodeField}>
             <CodeField
-              ref={refs[index + 1]}
-              {...propsArray[index + 1]}
+              ref={refs[i + 1]}
+              {...propsArray[i + 1]}
               value={value}
               onChangeText={(text) => {
                 const newValues = [...fieldValues];
-                newValues[index + 1] = text;
+                newValues[i + 1] = text;
                 setFieldValues(newValues);
               }}
-              onSubmitEditing={() => SubmitTry(index + 1)}
+              onSubmitEditing={() => SubmitTry(i, fieldValues[i])}
               cellCount={CELL_COUNT}
               rootStyle={styles.codeFieldRoot}
               keyboardType="ascii-capable"
@@ -204,7 +206,9 @@ export default function Room() {
                   style={[
                     styles.cell,
                     isFocused && styles.focusCell,
-                    { backgroundColor: cellColors[index] }, // Apply cell colors here
+                    {
+                      backgroundColor: cellColors[i][index],
+                    }, // Apply cell colors here
                   ]}
                   onLayout={getCellOnLayoutHandlers(index)}
                 >
