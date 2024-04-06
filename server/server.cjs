@@ -148,6 +148,41 @@ app.get("/getword", async (req, res) => {
   }
 });
 
+app.get("/addtry", async (req, res) => {
+  try {
+    const { username, triedword } = req.query;
+
+    // Find the game document where user1 or user2 matches the username
+    const game = await Game.findOne({
+      $or: [{ user1: username }, { user2: username }],
+    });
+    if (!game) {
+      return res
+        .status(404)
+        .json({ error: "Game not found for the given username." });
+    }
+
+    // Determine which user's try array to update based on the username
+    let updateField;
+    if (game.user1 === username) {
+      updateField = "user1try";
+    } else {
+      updateField = "user2try";
+    }
+
+    // Update the appropriate try array with the triedword
+    await Game.updateOne(
+      { _id: game._id },
+      { $push: { [updateField]: triedword } }
+    );
+
+    res.status(200).json({ message: "Tried word added successfully." });
+  } catch (error) {
+    console.error("Error occurred while adding tried word:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 app.post("/setenemyword", async (req, res) => {
   try {
     const { username, roomtype, word } = req.body;

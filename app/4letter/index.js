@@ -30,7 +30,6 @@ export default function Room() {
   ]);
 
   useEffect(() => {
-    console.log(cellColors[0][0]);
     const fetchData = async () => {
       try {
         const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
@@ -65,6 +64,7 @@ export default function Room() {
             roomtype: "4letter",
           },
         });
+        room = res.data.room;
 
         if (name === res.data.room.user1) {
           setOwnWord(res.data.room.user1word);
@@ -114,25 +114,43 @@ export default function Room() {
     }
   };
 
-  const SubmitTry = (index, submittedValue) => {
-    for (let i = 0; i < CELL_COUNT; i++) {
-      const cellValue = ownWord[i]; //orijinal
-      const submittedChar = submittedValue[i];
-      if (!ownWord.includes(submittedChar)) {
-        const newCellColors = [...cellColors[index]];
-        newCellColors[i] = "rgb(128, 128, 128)"; // Grey color in RGB format
-        setCellColors(newCellColors);
-      } else {
-        if (cellValue === submittedChar) {
-          const newCellColors = [...cellColors[index]];
-          newCellColors[i] = "rgb(0, 255, 0)"; // Grey color in RGB format
-          setCellColors(newCellColors);
-        } else if (ownWord.includes(submittedChar)) {
-          const newCellColors = [...cellColors[index]];
-          newCellColors[i] = "rgb(255, 255, 0)"; // Grey color in RGB format
-          setCellColors(newCellColors);
+  const SubmitTry = async (index, submittedValue) => {
+    setCellColors((prevCellColors) => {
+      return prevCellColors.map((row, rowIndex) => {
+        if (rowIndex !== index) return row; // If it's not the target row, return the original row unchanged
+
+        // Clone the row array to avoid mutating the state directly
+        const newRow = [...row];
+
+        // Iterate through the cells of the row and update the colors accordingly
+        for (let i = 0; i < CELL_COUNT; i++) {
+          const cellValue = ownWord[i];
+          const submittedChar = submittedValue[i];
+
+          if (!ownWord.includes(submittedChar)) {
+            newRow[i] = "rgb(128, 128, 128)"; // Grey color in RGB format
+          } else {
+            if (cellValue === submittedChar) {
+              newRow[i] = "rgb(0, 255, 0)"; // Green color in RGB format
+            } else if (ownWord.includes(submittedChar)) {
+              newRow[i] = "rgb(255, 255, 0)"; // Yellow color in RGB format
+            }
+          }
         }
-      }
+
+        return newRow; // Return the updated row
+      });
+    });
+
+    try {
+      const response = await axios.get(`http://192.168.1.37:${PORT}/addtry`, {
+        params: {
+          username: name,
+          triedword: submittedValue,
+        },
+      });
+    } catch (error) {
+      console.error("Error occurred while adding new try:", error);
     }
   };
 
@@ -195,11 +213,12 @@ export default function Room() {
                 newValues[i + 1] = text;
                 setFieldValues(newValues);
               }}
-              onSubmitEditing={() => SubmitTry(i, fieldValues[i])}
+              onSubmitEditing={() => SubmitTry(i, fieldValues[i + 1])}
               cellCount={CELL_COUNT}
               rootStyle={styles.codeFieldRoot}
               keyboardType="ascii-capable"
               textContentType="oneTimeCode"
+              editable={[...cellColors][i][0] === "rgb(255, 255, 255)"}
               renderCell={({ index, symbol, isFocused }) => (
                 <Text
                   key={index}
