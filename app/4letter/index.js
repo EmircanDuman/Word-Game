@@ -1,5 +1,3 @@
-//TODO BELKİ STYLES SHEET İLE YAPILABİLİR
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Text, View } from "react-native";
@@ -20,12 +18,14 @@ export default function Room() {
   const [opponentWord, setOpponentWord] = useState("");
   const [opponentWordExists, setOpponentWordExists] = useState(false);
   const [ownWord, setOwnWord] = useState(null);
+  const [sonuc, setSonuc] = useState(null);
 
   const CELL_COUNT = 4;
+  const ROOM_TYPE = "4letter";
   const [cellColors, setCellColors] = useState([
-    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"), // White color for the first row
-    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"), // Yellow color for the second row
-    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"), // Green color for the third row
+    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"),
+    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"),
+    Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"),
     Array.from({ length: CELL_COUNT }, () => "rgb(255, 255, 255)"),
   ]);
 
@@ -35,14 +35,13 @@ export default function Room() {
         const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
           params: {
             username: name,
-            roomtype: "4letter",
+            roomtype: ROOM_TYPE,
           },
         });
         const room = res.data.room;
         const user1 = room.user1;
         const user2 = room.user2;
 
-        // Determine the other user
         const otherUser = user1 === name ? user2 : user1;
 
         setOtherUser(otherUser);
@@ -61,7 +60,7 @@ export default function Room() {
         const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
           params: {
             username: name,
-            roomtype: "4letter",
+            roomtype: ROOM_TYPE,
           },
         });
         room = res.data.room;
@@ -77,7 +76,41 @@ export default function Room() {
     }, 1000);
   }, []);
 
-  const initialFieldValues = Array(5).fill("");
+  useEffect(() => {
+    let intervalID = setInterval(async () => {
+      try {
+        const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
+          params: {
+            username: name,
+            roomtype: ROOM_TYPE,
+          },
+        });
+        room = res.data.room;
+
+        if (room.user1 === name) {
+          if (room.user2word && room.user2try.includes(room.user2word)) {
+            clearInterval(intervalID);
+            setSonuc("Opponent has won!");
+          } else if (room.user1word && room.user1try.includes(room.user1word)) {
+            clearInterval(intervalID);
+            setSonuc("You have won");
+          }
+        } else if (room.user2 === name) {
+          if (room.user1word && room.user1try.includes(room.user1word)) {
+            clearInterval(intervalID);
+            setSonuc("Opponent has won!");
+          } else if (room.user2word && room.user2try.includes(room.user2word)) {
+            clearInterval(intervalID);
+            setSonuc("You have won");
+          }
+        }
+      } catch (error) {
+        console.error("Error occured during usertry check: ", error);
+      }
+    }, 1000);
+  }, []);
+
+  const initialFieldValues = Array(CELL_COUNT + 1).fill("");
   const [fieldValues, setFieldValues] = useState(initialFieldValues);
   const refs = fieldValues.map(() =>
     useBlurOnFulfill({ value: "", cellCount: CELL_COUNT })
@@ -105,7 +138,7 @@ export default function Room() {
         url: `http://192.168.1.37:${PORT}/setenemyword`,
         data: {
           username: name,
-          roomtype: "4letter",
+          roomtype: ROOM_TYPE,
           word: fieldValues[0],
         },
       });
@@ -117,28 +150,26 @@ export default function Room() {
   const SubmitTry = async (index, submittedValue) => {
     setCellColors((prevCellColors) => {
       return prevCellColors.map((row, rowIndex) => {
-        if (rowIndex !== index) return row; // If it's not the target row, return the original row unchanged
+        if (rowIndex !== index) return row;
 
-        // Clone the row array to avoid mutating the state directly
         const newRow = [...row];
 
-        // Iterate through the cells of the row and update the colors accordingly
         for (let i = 0; i < CELL_COUNT; i++) {
           const cellValue = ownWord[i];
           const submittedChar = submittedValue[i];
 
           if (!ownWord.includes(submittedChar)) {
-            newRow[i] = "rgb(128, 128, 128)"; // Grey color in RGB format
+            newRow[i] = "rgb(128, 128, 128)";
           } else {
             if (cellValue === submittedChar) {
-              newRow[i] = "rgb(0, 255, 0)"; // Green color in RGB format
+              newRow[i] = "rgb(0, 255, 0)";
             } else if (ownWord.includes(submittedChar)) {
-              newRow[i] = "rgb(255, 255, 0)"; // Yellow color in RGB format
+              newRow[i] = "rgb(255, 255, 0)";
             }
           }
         }
 
-        return newRow; // Return the updated row
+        return newRow;
       });
     });
 
@@ -197,10 +228,12 @@ export default function Room() {
           />
         </View>
       )}
-      {opponentWordExists && ownWord === null && (
+      {opponentWordExists && ownWord === null && sonuc === null && (
         <Text>Please wait for opponent to submit a word...</Text>
       )}
+      {sonuc !== null && <Text style={tw`text-2xl`}>{sonuc}</Text>}
       {opponentWordExists &&
+        sonuc === null &&
         ownWord !== null &&
         fieldValues.slice(1).map((value, i) => (
           <View key={i + 1} style={styles.firstCodeField}>
@@ -227,7 +260,7 @@ export default function Room() {
                     isFocused && styles.focusCell,
                     {
                       backgroundColor: cellColors[i][index],
-                    }, // Apply cell colors here
+                    },
                   ]}
                   onLayout={getCellOnLayoutHandlers(index)}
                 >

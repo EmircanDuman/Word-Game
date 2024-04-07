@@ -66,7 +66,7 @@ export default function OyunModuSec() {
       <View style={tw`flex flex-row gap-5`}>
         <View style={tw`flex flex-col gap-5`}>
           <Button
-            title="4 oyuncu"
+            title="4 harfli"
             style={tw`p-5`}
             onPress={() =>
               joinGame({
@@ -75,11 +75,38 @@ export default function OyunModuSec() {
               })
             }
           />
-          <Button title="5 oyuncu" style={tw`p-5`} />
+          <Button
+            title="5 harfli"
+            style={tw`p-5`}
+            onPress={() =>
+              joinGame({
+                username: name,
+                roomtype: "5letter",
+              })
+            }
+          />
         </View>
         <View style={tw`flex flex-col gap-5`}>
-          <Button title="6 oyuncu" style={tw`p-5`} />
-          <Button title="7 oyuncu" style={tw`p-5`} />
+          <Button
+            title="6 harfli"
+            style={tw`p-5`}
+            onPress={() =>
+              joinGame({
+                username: name,
+                roomtype: "6letter",
+              })
+            }
+          />
+          <Button
+            title="7 harfli"
+            style={tw`p-5`}
+            onPress={() =>
+              joinGame({
+                username: name,
+                roomtype: "7letter",
+              })
+            }
+          />
         </View>
         <Button
           title="Logout"
