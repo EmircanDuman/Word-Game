@@ -31,7 +31,7 @@ export default function OyunModuSec() {
   const joinGame = async ({ username, roomtype }) => {
     setDirective("Joining...");
     setTimeout(async () => {
-      const res = await axios.get(`http://192.168.1.37:${PORT}/joinroom`, {
+      const res = await axios.get(`http://192.168.174.64:${PORT}/joinroom`, {
         params: {
           username: username,
           roomtype: roomtype,

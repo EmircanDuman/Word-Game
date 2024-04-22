@@ -8,7 +8,7 @@ export const sendHeartbeat = async (username) => {
   try {
     await axios({
       method: "post",
-      url: `http://192.168.1.37:${PORT}/api/heartbeat`,
+      url: `http://192.168.174.64:${PORT}/api/heartbeat`,
       data: {
         name: username,
       },

@@ -34,7 +34,7 @@ export default function Room() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
+        const res = await axios.get(`http://192.168.174.64:${PORT}/getroom`, {
           params: {
             username: name,
             roomtype: ROOM_TYPE,
@@ -59,7 +59,7 @@ export default function Room() {
     let intervalID = setInterval(async () => {
       try {
         if (ownWord !== null) clearInterval(intervalID);
-        const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
+        const res = await axios.get(`http://192.168.174.64:${PORT}/getroom`, {
           params: {
             username: name,
             roomtype: ROOM_TYPE,
@@ -81,7 +81,7 @@ export default function Room() {
   useEffect(() => {
     let intervalID = setInterval(async () => {
       try {
-        const res = await axios.get(`http://192.168.1.37:${PORT}/getroom`, {
+        const res = await axios.get(`http://192.168.174.64:${PORT}/getroom`, {
           params: {
             username: name,
             roomtype: ROOM_TYPE,
@@ -127,7 +127,7 @@ export default function Room() {
   });
 
   const SubmitEnemyWord = async () => {
-    const res = await axios.get(`http://192.168.1.37:${PORT}/getword`, {
+    const res = await axios.get(`http://192.168.174.64:${PORT}/getword`, {
       params: {
         kelime: fieldValues[0],
       },
@@ -137,7 +137,7 @@ export default function Room() {
       setOpponentWord(fieldValues[0]);
       const updateRes = await axios({
         method: "post",
-        url: `http://192.168.1.37:${PORT}/setenemyword`,
+        url: `http://192.168.174.64:${PORT}/setenemyword`,
         data: {
           username: name,
           roomtype: ROOM_TYPE,
@@ -176,7 +176,7 @@ export default function Room() {
     });
 
     try {
-      const response = await axios.get(`http://192.168.1.37:${PORT}/addtry`, {
+      const response = await axios.get(`http://192.168.174.64:${PORT}/addtry`, {
         params: {
           username: name,
           triedword: submittedValue,

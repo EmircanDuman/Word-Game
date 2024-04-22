@@ -27,7 +27,7 @@ const App = () => {
 
     try {
       setStatus("Fetching...");
-      const res = await axios.get(`http://192.168.1.37:${PORT}/user`, {
+      const res = await axios.get(`http://192.168.174.64:${PORT}/user`, {
         params: {
           name: name,
           password: password,
@@ -63,7 +63,7 @@ const App = () => {
     try {
       setStatus("Fetching...");
       const res = await axios.get(
-        `http://192.168.1.37:${PORT}/user/checkname`,
+        `http://192.168.174.64:${PORT}/user/checkname`,
         {
           params: {
             name: name,
@@ -75,7 +75,7 @@ const App = () => {
         setStatus("Adding new user...");
         const newUserRes = await axios({
           method: "post",
-          url: `http://192.168.1.37:${PORT}/user`,
+          url: `http://192.168.174.64:${PORT}/user`,
           data: {
             name: name,
             password: password,
